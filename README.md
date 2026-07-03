@@ -50,12 +50,12 @@ A mid-sized supermarket chain was losing money from perishable goods expiring on
 ## 📊 Dashboard Preview
 
 ### Page 1: Executive Summary
-![Executive Summary](visualizations/Screenshot 2026-07-03 205133.png)
+![Executive Summary](Screenshot%202026-07-03%20205133.png)
 
 ### Page 2: Daily Action Workbench
-![Action Workbench](visualizations/page2_action_workbench.png)
+![Action Workbench](Screenshot%202026-07-03%20205148.png)
 
 ### Page 3: Supplier Deep Dive
-![Supplier Deep Dive](visualizations/page3_supplier_deepdive.png)
+![Supplier Deep Dive](Screenshot%202026-07-03%20205202.png)
 
 ## 📁 Repository Structure
