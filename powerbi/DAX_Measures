@@ -1,0 +1,196 @@
+============================================================
+DAX MEASURES & CALCULATED COLUMNS
+Project: Retail Inventory Optimization
+Author: Anuj Singh Bhardwaj
+============================================================
+
+============================================================
+PART 1: MEASURES (Used in Visuals & KPIs)
+============================================================
+
+--------------------------------------------
+1. Base Count & Financial Metrics
+--------------------------------------------
+
+// Total SKUs: Count of all products in the dataset
+Total SKUs = COUNTROWS('supermarket_inventory_cleaned')
+
+// Total Spoilage Cost: Sum of financial loss from expired products
+Total Spoilage Cost = SUM('supermarket_inventory_cleaned'[Spoilage_Cost])
+
+// Total Stockout Cost: Sum of lost profits from zero stockouts (remains 0 in this dataset)
+Total Stockout Cost = SUM('supermarket_inventory_cleaned'[Stockout_Cost])
+
+// Total Opportunity Cost: True financial impact (Spoilage + Stockout)
+Total Opportunity Cost = SUM('supermarket_inventory_cleaned'[Opportunity_Cost])
+
+--------------------------------------------
+2. SKU Counts (Critical & Urgent)
+--------------------------------------------
+
+// Critical SKUs: Products with negative Days_Until_Spoilage (already past shelf life)
+Critical SKU Count = 
+CALCULATE(
+    [Total SKUs],
+    'supermarket_inventory_cleaned'[Days_Until_Spoilage] < 0
+)
+
+// Write Off SKUs: Products that need immediate disposal
+Write Off SKU Count = 
+CALCULATE(
+    [Total SKUs],
+    'supermarket_inventory_cleaned'[Spoilage_Urgency] = "CRITICAL: Write Off - Remove from Shelf"
+)
+
+// Urgent Action SKUs: Write Off + Deep Discount + Immediate Markdown combined
+Urgent Action SKU Count = 
+CALCULATE(
+    [Total SKUs],
+    'supermarket_inventory_cleaned'[Spoilage_Urgency] = "CRITICAL: Write Off - Remove from Shelf" ||
+    'supermarket_inventory_cleaned'[Spoilage_Urgency] = "CRITICAL: Deep Discount (70%+) Today" ||
+    'supermarket_inventory_cleaned'[Spoilage_Urgency] = "URGENT: Immediate Markdown (50%)"
+)
+
+// Safe SKU Count: Products with healthy stock (Days_Until_Spoilage >= 5)
+Safe SKU Count = 
+CALCULATE(
+    [Total SKUs],
+    'supermarket_inventory_cleaned'[Spoilage_Urgency] = "Safe"
+)
+
+--------------------------------------------
+3. Supplier Analysis Measures
+--------------------------------------------
+
+// Total Suppliers: Number of distinct suppliers in the dataset
+Total Suppliers = 
+DISTINCTCOUNT('supermarket_inventory_cleaned'[Supplier])
+
+// Top Offending Supplier: Dynamically shows the supplier with highest spoilage cost
+Top Offending Supplier = 
+CALCULATE(
+    VALUES('supermarket_inventory_cleaned'[Supplier]),
+    TOPN(
+        1,
+        ALL('supermarket_inventory_cleaned'[Supplier]),
+        CALCULATE(SUM('supermarket_inventory_cleaned'[Spoilage_Cost]))
+    )
+)
+
+// Avg Spoilage per Supplier: Average financial loss per supplier
+Avg Spoilage per Supplier = 
+DIVIDE(
+    [Total Spoilage Cost],
+    [Total Suppliers]
+)
+
+--------------------------------------------
+4. Inventory Risk Measures (Used in Context KPIs)
+--------------------------------------------
+
+// Stock at Risk: Total dollar value of inventory currently sitting on shelves
+Stock at Risk = 
+SUMX(
+    'supermarket_inventory_cleaned',
+    'supermarket_inventory_cleaned'[StockQuantity] * 'supermarket_inventory_cleaned'[Cost_Price]
+)
+
+// Write Off Value: Total cost of products flagged for Write Off
+Write Off Value = 
+CALCULATE(
+    [Total Spoilage Cost],
+    'supermarket_inventory_cleaned'[Spoilage_Urgency] = "CRITICAL: Write Off - Remove from Shelf"
+)
+
+--------------------------------------------
+5. Conditional Formatting Measure (For Dashboard Colors)
+--------------------------------------------
+
+// Urgency Color: Maps urgency categories to hex codes for background coloring
+Urgency Color = 
+SWITCH(
+    SELECTEDVALUE('supermarket_inventory_cleaned'[Urgency_Short]),
+    "Write Off", "#B71C1C",
+    "Deep Discount", "#E65100",
+    "Markdown", "#F57C00",
+    "Discount Today", "#FBC02D",
+    "Discount Now", "#FBC02D",
+    "Monitor", "#8BC34A",
+    "Safe", "#2E7D32",
+    "#FFFFFF"
+)
+
+
+============================================================
+PART 2: CALCULATED COLUMNS (Created in Power BI)
+============================================================
+
+--------------------------------------------
+1. Shortened Urgency Labels (For cleaner visuals)
+--------------------------------------------
+Urgency_Short = 
+SWITCH(
+    'supermarket_inventory_cleaned'[Spoilage_Urgency],
+    "CRITICAL: Write Off - Remove from Shelf", "Write Off",
+    "CRITICAL: Deep Discount (70%+) Today", "Deep Discount",
+    "URGENT: Immediate Markdown (50%)", "Markdown",
+    "URGENT: Discount Today", "Discount Today",
+    "URGENT: Discount Now", "Discount Now",
+    "Monitor: Plan Promotion", "Monitor",
+    "Safe", "Safe",
+    'supermarket_inventory_cleaned'[Spoilage_Urgency]
+)
+
+--------------------------------------------
+2. Recommended Action Text (For the Action Table)
+--------------------------------------------
+Recommended Action = 
+SWITCH(
+    'supermarket_inventory_cleaned'[Spoilage_Urgency],
+    "CRITICAL: Write Off - Remove from Shelf", "🚫 Write Off Immediately",
+    "CRITICAL: Deep Discount (70%+) Today", "🏷️ 70%+ Discount Today",
+    "URGENT: Immediate Markdown (50%)", "🏷️ 50% Markdown Today",
+    "URGENT: Discount Today", "🏷️ Discount Today",
+    "URGENT: Discount Now", "🏷️ Discount Now",
+    "Monitor: Plan Promotion", "📊 Plan Promotion",
+    "Safe", "✅ No Action Needed",
+    "Check Status"
+)
+
+--------------------------------------------
+3. Critical vs Safe Flag (For the Donut Chart)
+--------------------------------------------
+Critical_Flag = 
+IF('supermarket_inventory_cleaned'[Days_Until_Spoilage] < 0, "Critical", "Safe")
+
+
+============================================================
+PART 3: HOW TO USE THESE IN POWER BI
+============================================================
+
+1. MEASURES: Go to 'Modeling' tab → Click 'New Measure' → Paste the DAX code.
+2. CALCULATED COLUMNS: Go to 'Table Tools' → Click 'New Column' → Paste the DAX code.
+3. CONDITIONAL FORMATTING: 
+   - For the Table visual: Select the visual → Format (paint roller) → Cell Elements.
+   - Click "fx" next to Background color → Format by = Field value → Select "Urgency Color" measure.
+4. CONTEXT KPI CARDS: Drop these measures onto Card visuals for Page 2 & Page 3.
+
+============================================================
+NOTES & ASSUMPTIONS
+============================================================
+
+- All measures assume the table name is 'supermarket_inventory_cleaned'.
+  If your table name is different, replace 'supermarket_inventory_cleaned' with your table name.
+
+- The 'IN' operator is avoided in the 'Urgent Action SKU Count' measure to prevent
+  compatibility issues with older Power BI versions.
+
+- The 'Urgency Color' measure is specifically used for conditional formatting.
+  It maps perfectly to the 'Urgency_Short' calculated column.
+
+- Stockout measures return zero (0) for this dataset, as the analysis revealed
+  zero stockouts across the chain.
+
+============================================================
+END OF FILE
+============================================================
