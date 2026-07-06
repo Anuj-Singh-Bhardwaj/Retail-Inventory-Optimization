@@ -59,3 +59,9 @@ A mid-sized supermarket chain was losing money from perishable goods expiring on
 ![Supplier Deep Dive](Visualisation/page3.png)
 
 ## 📁 Repository Structure
+
+
+## 🤝 Connect with Me
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/anuj-singh-a61646234/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Anuj-Singh-Bhardwaj)
